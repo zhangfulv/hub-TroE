@@ -63,7 +63,7 @@ def evaluate(model):
     one,two,tree,four,five = 0,0,0,0,0
     with torch.no_grad():
         y_pred = model(x) # 获取预测结果（概率）
-        print(y_pred)
+        # print(y_pred)
         for y_p, y_t in zip(y_pred, y):
             if np.argmax(y_p) == int(y_t):
                 correct += 1
