@@ -192,8 +192,6 @@ def train():
     data  = build_dataset(N_SAMPLES)
     vocab = read_words()
     print(f"  样本数：{len(data)}，词表大小：{len(vocab)}")
-    print("数据集:",data)
-    sys.exit()
 
     split      = int(len(data) * TRAIN_RATIO)
     train_data = data[:split]
