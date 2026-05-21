@@ -72,7 +72,7 @@ def beam_search(model, vocab, input_text, max_len=100, beam_size=3, device='cpu'
     end_token_idx = vocab.char2idx["<EOS>"]
     pad_token_idx = vocab.char2idx["<PAD>"]
 
-    input_indices = vocab.encode(input_text)
+    input_indices = vocab.encode(input_text) + [vocab.char2idx["<SEP>"]]
     
     beams = [(input_indices, 0.0)]
     completed = []
@@ -219,10 +219,10 @@ def main():
         return
 
     test_questions = [
-        "你好",
-        "你叫什么名字",
-        "早上好",
-        "我很看好你哦"
+        "避险资金青睐依旧 黄金牛市难言终结",
+        "□本报记者 熊锋",
+        "谁为欧债背书？",
+        "曹忠忠：如果希腊真的退出欧元区"
     ]
 
     batch_test(model, vocab, test_questions, device)

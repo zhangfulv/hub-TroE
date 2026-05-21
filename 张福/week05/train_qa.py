@@ -19,9 +19,9 @@ class Vocabulary:
     """词汇表类，用于将字符/词转换为索引"""
     
     def __init__(self):
-        self.char2idx = {"<PAD>": 0, "<SOS>": 1, "<EOS>": 2, "<UNK>": 3}
-        self.idx2char = {0: "<PAD>", 1: "<SOS>", 2: "<EOS>", 3: "<UNK>"}
-        self.n_chars = 4
+        self.char2idx = {"<PAD>": 0, "<SOS>": 1, "<EOS>": 2, "<UNK>": 3, "<SEP>": 4}
+        self.idx2char = {0: "<PAD>", 1: "<SOS>", 2: "<EOS>", 3: "<UNK>", 4: "<SEP>"}
+        self.n_chars = 5
     
     def build_vocab(self, texts):
         """从文本列表构建词汇表"""
@@ -59,7 +59,7 @@ class Vocabulary:
 class QADataset(Dataset):
     """问答数据集"""
     
-    def __init__(self, pairs, vocab, max_len=100):
+    def __init__(self, pairs, vocab, max_len=512):
         self.pairs = pairs
         self.vocab = vocab
         self.max_len = max_len
@@ -69,15 +69,20 @@ class QADataset(Dataset):
     
     def __getitem__(self, idx):
         question, answer = self.pairs[idx]
-        
+        # 将语料 转为 字典映射索引
         question_enc = self.vocab.encode(question)
         answer_enc = self.vocab.encode(answer, add_eos=True)
         
-        combined_enc = question_enc + answer_enc
+        # 在问题和答案之间添加分隔符
+        sep_enc = [self.vocab.char2idx["<SEP>"]]
+        combined_enc = question_enc + sep_enc + answer_enc
         
         if len(combined_enc) > self.max_len:
             combined_enc = combined_enc[:self.max_len]
-        
+
+        # print(combined_enc,type(combined_enc))
+
+        #将字符串，问答 ，转化为向量
         combined_tensor = torch.tensor(combined_enc, dtype=torch.long)
         
         return combined_tensor, len(question_enc)
@@ -138,7 +143,7 @@ def train_model(model, train_loader, test_loader, device, num_epochs=50, lr=0.00
             tokens = 0
 
             for i in range(batch_size):
-                start_idx = q_lens[i]
+                start_idx = q_lens[i] + 1  # +1 跳过分隔符
                 end_idx = seq_len - 1
 
                 if start_idx < end_idx:
@@ -189,7 +194,7 @@ def train_model(model, train_loader, test_loader, device, num_epochs=50, lr=0.00
                 tokens = 0
 
                 for i in range(batch_size):
-                    start_idx = q_lens[i]
+                    start_idx = q_lens[i] + 1  # +1 跳过分隔符
                     end_idx = seq_len - 1
 
                     if start_idx < end_idx:
@@ -250,7 +255,7 @@ def main():
 
     train_data, test_data = create_split_dataset(pairs)
 
-    max_len = 100
+    max_len = 512
     train_dataset = QADataset(train_data, vocab, max_len)
     test_dataset = QADataset(test_data, vocab, max_len)
     
@@ -283,7 +288,7 @@ def main():
     print(f"模型参数量: {sum(p.numel() for p in model.parameters()):,}")
     
     print("\n开始训练...")
-    model = train_model(model, train_loader, test_loader, device, num_epochs=150, lr=5e-4)
+    model = train_model(model, train_loader, test_loader, device, num_epochs=20, lr=5e-4)
     
     print("\n训练完成！模型已保存为 ask_answer.pt")
     

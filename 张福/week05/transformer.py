@@ -335,14 +335,14 @@ class Transformer(nn.Module):
         # 词嵌入 + 位置编码
         # 乘以sqrt(embed_dim)是为了平衡嵌入和位置编码的幅度
         x = self.embedding(x) * torch.sqrt(torch.tensor(self.embed_dim, dtype=torch.float32))
-        # x = self.positional_encoding(x)
-        # x = self.dropout(x)
+        x = self.positional_encoding(x)
+        x = self.dropout(x)
         
         # 逐层通过Transformer块
-        # all_attn_weights = []
-        # for block in self.transformer_blocks:
-        #     x, attn_weights = block(x, mask)
-        #     all_attn_weights.append(attn_weights)
+        all_attn_weights = []
+        for block in self.transformer_blocks:
+            x, attn_weights = block(x, mask)
+            all_attn_weights.append(attn_weights)
         
         # 输出层
         output = self.fc(x)

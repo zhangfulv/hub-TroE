@@ -6,7 +6,7 @@
 
 import os
 
-
+label = ["问题：","答案："]
 def load_corpus_from_txt(filepath="corpus.txt"):
     """从txt文件加载语料库
 
@@ -22,13 +22,17 @@ def load_corpus_from_txt(filepath="corpus.txt"):
 
     if not os.path.exists(filepath):
         return get_corpus()
-
+    n = 1
     with open(filepath, 'r', encoding='utf-8') as f:
         for line in f:
             line = line.strip()
             if not line:
                 continue
-
+            if n%2 == 1:
+                line = label[0] + line
+            else:
+                line = label[1] + line
+            n = n + 1
             if line.startswith("问题："):
                 if current_question and current_answer:
                     corpus.append({
