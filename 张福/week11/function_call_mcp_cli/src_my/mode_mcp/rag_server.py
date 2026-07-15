@@ -35,12 +35,7 @@ def log(msg: str):
     print(msg, file=sys.stderr, flush=True)
 
 
-# FastMCP 实例，name 是这个 Server 的身份标识，Client 连接后会收到
-mcp = FastMCP("rag-server")
-
-
-@mcp.tool()
-def search_annual_report(
+def _search_tool(
     query: str,
     stock_code: str | None = None,
     year: str | None = None,
@@ -67,8 +62,7 @@ def search_annual_report(
     return _search_annual_report(query, stock_code, year, top_k)
 
 
-@mcp.tool()
-def list_companies() -> str:
+def _list_tool() -> str:
     """
     列出年报知识库中收录的所有公司、股票代码与可查年份。
     用于确认目标公司在库内，并获取正确的 stock_code。
@@ -80,5 +74,21 @@ def list_companies() -> str:
 
 
 if __name__ == "__main__":
-    log("RAG MCP Server 启动中（stdio 模式）...")
-    mcp.run(transport="stdio")
+    import argparse
+    parser = argparse.ArgumentParser(description="RAG MCP Server")
+    parser.add_argument("--transport", "-t", default="stdio", choices=["stdio", "streamable-http"],
+                        help="通信方式：stdio 或 streamable-http")
+    parser.add_argument("--host", default="127.0.0.1", help="TCP/IP 绑定地址")
+    parser.add_argument("--port", "-p", type=int, default=8001, help="TCP/IP 绑定端口")
+    args = parser.parse_args()
+
+    mcp = FastMCP("rag-server", host=args.host, port=args.port)
+    mcp.add_tool(_search_tool, name="search_annual_report")
+    mcp.add_tool(_list_tool, name="list_companies")
+
+    if args.transport == "streamable-http":
+        log(f"RAG MCP Server 启动中（streamable-http 模式）... host={args.host} port={args.port}")
+        mcp.run(transport="streamable-http")
+    else:
+        log("RAG MCP Server 启动中（stdio 模式）...")
+        mcp.run(transport="stdio")

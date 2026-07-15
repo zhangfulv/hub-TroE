@@ -20,18 +20,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from mcp.server.fastmcp import FastMCP  # noqa: E402
 
 # 用 as 别名避免同名 tool 函数遮蔽后端函数导致递归
-from src_my.weather_backend import get_weather as _get_weather,get_latlon as _get_latlon,get_weather_latlon as _get_weather_latlon  # noqa: E402
+from src_my.weather_backend import get_weather as _get_weather, get_latlon as _get_latlon, get_weather_latlon as _get_weather_latlon  # noqa: E402
 
 
 def log(msg: str):
     print(msg, file=sys.stderr, flush=True)
 
 
-mcp = FastMCP("weather-server")
-
-
-@mcp.tool()
-def get_weather(city: str) -> str:
+def _weather_tool(city: str) -> str:
     """
     查询指定城市的当前天气及未来3天预报。
 
@@ -43,8 +39,8 @@ def get_weather(city: str) -> str:
     """
     return _get_weather(city)
 
-@mcp.tool()
-def get_latlon(city: str) -> str:
+
+def _latlon_tool(city: str) -> str:
     """
     查询指定城市的经纬度。
 
@@ -57,8 +53,8 @@ def get_latlon(city: str) -> str:
     msg = _get_latlon(city)
     return "".join(msg)
 
-@mcp.tool()
-def get_weather_latlon(lat: str,lon:str) -> str:
+
+def _weather_latlon_tool(lat: str, lon: str) -> str:
     """
     根据经纬度查询天气。
 
@@ -69,10 +65,27 @@ def get_weather_latlon(lat: str,lon:str) -> str:
     Returns:
         所选择经纬度的天气。
     """
-    msg = _get_weather_latlon(lat,lon)
+    msg = _get_weather_latlon(lat, lon)
     return "".join(msg)
 
 
 if __name__ == "__main__":
-    log("Weather MCP Server 启动中（stdio 模式）...")
-    mcp.run(transport="stdio")
+    import argparse
+    parser = argparse.ArgumentParser(description="Weather MCP Server")
+    parser.add_argument("--transport", "-t", default="stdio", choices=["stdio", "streamable-http"],
+                        help="通信方式：stdio 或 streamable-http")
+    parser.add_argument("--host", default="127.0.0.1", help="TCP/IP 绑定地址")
+    parser.add_argument("--port", "-p", type=int, default=8002, help="TCP/IP 绑定端口")
+    args = parser.parse_args()
+
+    mcp = FastMCP("weather-server", host=args.host, port=args.port)
+    mcp.add_tool(_weather_tool, name="get_weather")
+    mcp.add_tool(_latlon_tool, name="get_latlon")
+    mcp.add_tool(_weather_latlon_tool, name="get_weather_latlon")
+
+    if args.transport == "streamable-http":
+        log(f"Weather MCP Server 启动中（streamable-http 模式）... host={args.host} port={args.port}")
+        mcp.run(transport="streamable-http")
+    else:
+        log("Weather MCP Server 启动中（stdio 模式）...")
+        mcp.run(transport="stdio")
